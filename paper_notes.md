@@ -18,6 +18,34 @@
 
 [Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network](##Photo-Realistic Single Image Super-Resolution Using a Generative Adversarial Network)
 
+[Deep Generative Image Models using a Laplacian Pyramid of Adversarial Networks](##Deep Generative Image Models using a Laplacian Pyramid of Adversarial Networks)
+
+[Energy-Based Generative Adversarial Networks](##Energy-Based Generative Adversarial Networks)
+
+[Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks](##Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks)
+
+[Progressive Growing of GANs for Improved Quality, Stability, and Variation](##Progressive Growing of GANs for Improved Quality, Stability, and Variation)
+
+[Conditional Image Synthesis with Auxiliary Classifier GANs](##Conditional Image Synthesis with Auxiliary Classifier GANs)
+
+[Improving the Improved Training of Wasserstein GANs: A Consistency Term and Its Dual Effect](##Improving the Improved Training of Wasserstein GANs: A Consistency Term and Its Dual Effect)
+
+[Spectral Normalization for Generative Adversarial Networks](##Spectral Normalization for Generative Adversarial Networks)
+
+[Wasserstein Divergence for GANs](##Wasserstein Divergence for GANs)
+
+[InfoGAN: Interpretable Representation Learning by Information Maximizing Generative Adversarial Nets](##InfoGAN: Interpretable Representation Learning by Information Maximizing Generative Adversarial Nets)
+
+[Autoencoding beyond pixels using a learned similarity metric](##Autoencoding beyond pixels using a learned similarity metric)
+
+[Adversarial Feature Learning](##Adversarial Feature Learning)
+
+[Triple Generative Adversarial Nets](##Triple Generative Adversarial Nets)
+
+[Adversarial Ranking for Language Generation](##Adversarial Ranking for Language Generation)
+
+[XGAN: Unsupervised Image-to-Image Translation for Many-to-Many Mappings](##XGAN: Unsupervised Image-to-Image Translation for Many-to-Many Mappings)
+
 ## Deep Residual Learning for Image Recognition
 
 >   ResNet
@@ -472,7 +500,7 @@ where $p_g$ represents $G$'s distribution over data $x$, $p_z(z)$ represents noi
         where $k_0 = 0$, $\lambda_k$ is the proportional gain for $k$, just like the learning rate for $k$, and $\lambda_k = 0.001$ in these experiments.
 
     -   Architecture:
-        ![9.1](https://github.com/Oscarshu0719/paper-notes/blob/master/img/9.1.png)$\theta_D$ and $\theta_G$ are updated independently based on their respective losses
+        ![9.1](https://github.com/Oscarshu0719/paper-notes/blob/master/img/9.1.png)$\theta_D$ and $\theta_G$ are updated independently based on their respective losses
         with separate Adam optimizers. We typically used a batch size of $n = 16$.
 
     -   Convergence measure:
@@ -533,3 +561,253 @@ where $p_g$ represents $G$'s distribution over data $x$, $p_z(z)$ represents noi
 1.  perceptually 感性地
 2.  substantial 充實的
 
+## Deep Generative Image Models using a Laplacian Pyramid of Adversarial Networks
+
+>   LAPGAN
+
+1.  Laplacian Pyramid:
+
+    -   Coefficients $h_k$ at each level $k$ of the pyramid $\mathcal{L}(I)$:
+        $$
+        h_k = \mathcal{L}_k(I) = \mathcal{G}_k(I) - u(\mathcal{G}_{k + 1}(I)) = I_k - u(I_{k + 1})
+        $$
+        where $d(\cdot)$ is a downsampling operation, and $u(\cdot)$ is an upsampling operation. $d(I) \in j/2 \times j/2, \ u(I) \in 2j \times 2j, \ \text{where} \ I \in j \times j$. $\mathcal{G}_I = [I_0, I_1, \cdots, I_K]$, where $I_0 = I$ and $I_k$ is $k$ repeated applications of $d(\cdot)$ to $I$.
+
+    -   $$
+        I_k = u(I_{k + 1}) + h_k
+        $$
+
+        where $I_K = h_K$ and the reconstructed image being $I = I_o$.
+
+    -   In other words, starting at the coarsest level, we repeatedly upsample and add the difference image $h$ at the next finer level until we get back to the full resolution image.
+
+2.  LAPGAN:
+
+    -   $$
+        \tilde{I}_k = u(\tilde{I}_{k + 1}) + \tilde{h}_k = u(\tilde{I}_{k + 1}) + G_k(z_k, u(\tilde{I}_{k + 1}))
+        $$
+
+        where $\tilde{I}_{K + 1} = 0$. The generative models $\{G_0, \cdots, G_k\}$. Noise vector $z_K: \tilde{I}_K = G_K(z_K)$.
+
+    -   $$
+        \tilde{h}_k = G_k(z_k, u(I_{k + 1}))
+        $$
+
+    -   Architecture:
+        ![11.1](https://github.com/Oscarshu0719/paper-notes/blob/master/img/11.1.png)
+
+### Vocabulary
+
+1.  decimate 抽取
+
+## Energy-Based Generative Adversarial Networks
+
+>   EBGAN
+
+1.  Objective functions:
+
+    -   $G$:
+        $$
+        \mathcal{L}_G(z) = D(G(z))
+        $$
+
+    -   $D$:
+        $$
+        \mathcal{L}_D(x, z) = D(x) + [m - D(G(z))]^+
+        $$
+        where $[\cdot]^+ = \max(0, \cdot)$. Minimizing $\mathcal{L}_G$ with respect to the parameters of $G$ is similar to maximizing the second term of $\mathcal{L}_D$. It has the same minimum but non-zero gradients when $D(G(z)) \ge m$.
+
+2.  Optimality:
+
+    -   $$
+        \begin{cases}
+        V(G, D) = \int_{x, z}\mathcal{L}_D(x,z)p_{data}(x)p_z(z)dxdz \\
+        U(G, D) = \int_{z}\mathcal{L}_G(z)p_z(z)dz
+        \end{cases}
+        $$
+
+        We train $D$ to minimize $V$ and train $G$ to minimize $U$.
+
+    -   Nash equilibrium:
+        $$
+        \begin{cases}
+        V(G^*, D^*) \le V(G^*, D) & \forall D \\
+        U(G^*, D^*) \le U(G, D^*) & \forall G
+        \end{cases}
+        $$
+
+    -   If $(D^*, G^*)$ is a Nash equilibrium of the system, then $p_G^* = p_{data}$ almost everywhere, and $V^*(D^*, G^*) = m$.
+
+    -   If $(D^*, G^*)$ is a Nash equilibrium of the system, then there exists a constant $\gamma \in [0, m]$ such that $D^*(x) = \gamma$ almost everywhere.
+
+3.  Architecture:
+
+    -   Using auto-encoder:
+        $$
+        D(x) = ||Dec(Enc(x)) - x||
+        $$
+
+        ![12.1](https://github.com/Oscarshu0719/paper-notes/blob/master/img/12.1.png)
+
+4.  Repelling regularizer (Pulling-away Term, PT):
+    $$
+    f_{PT}(S) = \frac{1}{N(N - 1)}\sum_i\sum_{j \ne i}(\frac{S_i^TS_j}{||S_i||||S_j||})^2
+    $$
+    where $S \in \mathbb{R}^{s \times N}$ denotes a batch of sample representations taken from the encoder output layer. PT is used in the generator loss but NOT in the discriminator loss.
+
+### Vocabulary
+
+1.  postulate 假定
+2.  rationale 基本原理
+
+## Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks
+
+>   CycleGAN
+
+1.  Architecture:
+    ![13.1](https://github.com/Oscarshu0719/paper-notes/blob/master/img/13.1.png)
+
+2.  Adversarial losses:
+
+    -   $D_Y$:
+
+    $$
+    \mathcal{L}_{GAN} (G, D_Y, X, Y) = \mathbb{E}_{y \sim p_{data}(y)}[\log D_Y(y)] + \mathbb{E}_{x \sim p_{data}(x)}[\log (1 - D_Y(G(x)))]
+    $$
+
+    -   $D_X$:
+        $$
+        \mathcal{L}_{GAN}(F, D_X, Y, X) = \mathbb{E}_{x \sim p_{data}(x)}[\log D_X(x)] + \mathbb{E}_{y \sim p_{data}(y)}[\log (1 - D_X(F(y)))]
+        $$
+        where $D_X$ aims to distinguish between images $\{x\}$ and translated images $\{F(y)\}$, and $D_Y$ aims to discriminate between $\{y\}$ and $\{G(x)\}$.
+
+3.  Cycle consistency loss:
+    $$
+    \mathcal{L}_{cyc}(G, F) = \mathbb{E}_{x \sim p_{data}(x)}[||F(G(x)) - x||_1] + \mathbb{E}_{y \sim p_{data}(y)}[||G(F(y)) - y||_1]
+    $$
+
+4.  Full objective function:
+    $$
+    \mathcal{L}(G, F, D_X, D_Y) = \mathcal{L}_{GAN}(G, D_Y, X, Y) + \mathcal{L}_{GAN}(F, D_X, Y, X) + \lambda\mathcal{L}_{cyc}(G, F) \\
+    $$
+    We aim to solve:
+    $$
+    G^*, F^* = \text{arg}\min_{G, F}\max_{D_X, D_Y}\mathcal{L}(G, F, D_X, D_y)
+    $$
+
+5.  Implementation:
+
+    -   $G$:
+        $$
+        \mathbb{E}_{x \sim p_{data}(x)}[(D(G(x)) - 1)^2]
+        $$
+
+    -   $D$:
+        $$
+        \mathbb{E}_{y \sim p_{data}(y)}[(D(y) - 1)^2] + \mathbb{E}_{x \sim p_{data}(x)}[D(G(x))^2]
+        $$
+        for $\mathcal{L}_{GAN}(G, D, X, Y)$. Using least-square loss got better stability.
+
+### Vocabulary
+
+1.  incentivize 激勵
+
+## Progressive Growing of GANs for Improved Quality, Stability, and Variation
+
+>   PGGAN
+
+1.  Minibatch Standard Deviation (MSD) increasing variation:
+
+    -   We first compute the standard deviation for each feature in each spatial location over the minibatch. 
+    -   We then average these estimates over all features and spatial locations to arrive at a single value. 
+    -   We replicate the value and concatenate it to all spatial locations and over the minibatch, yielding one additional (constant) feature map. This layer could be inserted anywhere in the discriminator, but we have found it best to insert it towards the end.
+
+2.  Normalization:
+
+    -   Equalized learning rate:
+        $$
+        \hat{w}_i = w_i / c
+        $$
+        where $w_i$ are the weights and $c$ is the per-layer normalization constant from He's initializer.
+
+        -   He's initializer:
+            $$
+            \frac{1}{2}n_l \text{Var}[w_l] = 1
+            $$
+            where $w_l$ are weights of layer $l$ and $n_l$ is the number is weights at layer $l$.
+
+    -   Pixelwise feature vector normalization in $G$:
+        $$
+        b_{x, y} = a_{x, y} / \sqrt{\frac{1}{N}\sum^{N - 1}_{j = 0}(a_{x, y}^j)^2 + \epsilon}
+        $$
+        where $\epsilon = 10^{-8}$, $N$ is the number of feature maps, and $a_{x, y}$ and $b_{x, y}$ are the original and normalized feature vertor in pixel $(x, y)$, respectively.
+
+### Vocabulary
+
+1.  unprecedented 前所未有的
+2.  prone 易於
+3.  deviate 偏離
+
+## Conditional Image Synthesis with Auxiliary Classifier GANs
+
+>   ACGAN
+
+1.  
+
+### Vocabulary
+
+1.  
+
+## Improving the Improved Training of Wasserstein GANs: A Consistency Term and Its Dual Effect
+
+>   CTGAN
+
+1.  
+
+## Spectral Normalization for Generative Adversarial Networks
+
+>   SNGAN
+
+1.  
+
+## Wasserstein Divergence for GANs
+
+>   WGAN-div
+
+1.  
+
+## InfoGAN: Interpretable Representation Learning by Information Maximizing Generative Adversarial Nets
+
+>   InfoGAN
+
+1.  
+
+## Autoencoding beyond pixels using a learned similarity metric
+
+>   VAE-GAN
+
+1.  
+
+## Adversarial Feature Learning
+
+>   BiGAN
+
+1.  
+
+## Triple Generative Adversarial Nets
+
+>   Triple-GAN
+
+1.  
+
+## Adversarial Ranking for Language Generation
+
+>   RankGAN
+
+1.  
+
+## XGAN: Unsupervised Image-to-Image Translation for Many-to-Many Mappings
+
+>   XGAN
+
+1.  
