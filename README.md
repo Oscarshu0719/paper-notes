@@ -48,6 +48,8 @@
 
 [XGAN: Unsupervised Image-to-Image Translation for Many-to-Many Mappings](https://arxiv.org/abs/1711.05139)
 
+[DeepFaceLab: A simple, flexible and extensible face swapping framework](https://arxiv.org/abs/2005.05535)
+
 ## License
 
 MIT License.

@@ -46,6 +46,8 @@
 
 [XGAN: Unsupervised Image-to-Image Translation for Many-to-Many Mappings](##XGAN: Unsupervised Image-to-Image Translation for Many-to-Many Mappings)
 
+[DeepFaceLab: A simple, flexible and extensible face swapping framework](##DeepFaceLab: A simple, flexible and extensible face swapping framework)
+
 ## Deep Residual Learning for Image Recognition
 
 >   ResNet
@@ -811,3 +813,99 @@ where $p_g$ represents $G$'s distribution over data $x$, $p_z(z)$ represents noi
 >   XGAN
 
 1.  
+
+## DeepFaceLab: A simple, flexible and extensible face swapping framework
+
+>   DeepFaceLab
+
+### Extraction
+
+Three face types: **half face**, **full face**, and **whole face**, which represents the face coverage area of Extraction. Unless stated otherwise, ***full face*** is taken by default.
+
+Pipeline of Extraction stage: Face Detection, Face Alignment, and Face Segmentation.
+
+#### Face Detection
+
+Use **S3FD[1]** as default face detector, and others are available too, i.e. RetinaFace[2], MTCNN[3].
+
+#### Face Alignment
+
+Two facial landmark algorithm:
+
+-   **2DFAN[4]** for faces with **normal** posture.
+-   **PRNet[5]** for faces with **large Euler angle (yaw, pitch, roll)**.
+
+Adopt a classical point pattern mapping and transformation method proposed by
+Umeyama[6].
+
+As Umeyama[6] method needs standard facial landmark templates in calculating similarity transformation matrix, DFL provides three canonical aligned facial landmark templates: front view and side views (left and right). DFL could automatically determine the Euler angle according to the obtained facial landmarks.
+
+#### Face Segmentation
+
+Employ TernausNet[7] on top of aligned src.
+
+XSeg, a few-shot learning face segmentation diagram, is only necessary for those cases when `whole_face` type is being used or it is necessary to **remove obstructions** from the mask on the `full_face` type.
+
+![15.1](https://github.com/Oscarshu0719/paper-notes/blob/master/img/15.1.png)
+
+### Training
+
+A weighted sum mask loss in general **SSIM[8]** can be add to make each part of the face carry different weights under the AE training architecture. For example, we add more weights to the eye area than the cheek, which aims to make the network concentrate on generating a face with vivid eyes.
+
+As for losses, DFL uses a mixed loss (**DSSIM (structural dissimilarity)[9] + MSE**) by default.
+
+Users could add extra intermediate model to mix up the latent representation of src and dst (i.e, LIAE), or when users choose to train with GAN paradigm, self-customized discriminator are allowed to put after the decoder.
+![15.2](https://github.com/Oscarshu0719/paper-notes/blob/master/img/15.2.png)
+
+![15.4](https://github.com/Oscarshu0719/paper-notes/blob/master/img/15.4.png)
+
+### Conversion
+
+1.  Transform the generated face $I^r_t$ alongside with its mask $M_t$ from dst decoder to the original position of the target image $I_t$ in src due to the reversiblility of Umeyama[6].
+
+2.  Blending: DFL provides five more color transfer algorithms (i.e, reinhard color transfer:
+    **RCT[10]**, iterative distribution transfer: **IDT[11]** and etc.) to make $I^r_t$ more adaptable to the target image $I_t$. Then, combine two images: $I^r_t$ and $I_t$.
+    $$
+    I_{\text{output}} = M_t \odot I^r_t + (1 - M_t) \odot I_t
+    $$
+
+3.  **Poisson blending[12]** optimization:
+    $$
+    P(I_t; I^r_t; M_t) = \begin{cases}
+    ||\nabla I_t(i, j) - \nabla I^r_t(i, j)||^2_2 & \forall M_t(i, j) = 0 \\
+    \min ||\nabla f(i, j) - \nabla I^r_t(i, j)||^2_2 & \forall M_t(i, j) = 1
+    \end{cases}
+    $$
+    In the first situation, the result is a constant, so we only need to minimize the result in the second situation.
+
+4.  Sharpening: A pre-trained face super resolution neural network (denote as FaceEnhancer) was added to sharpen the blended face.
+
+![15.3](https://github.com/Oscarshu0719/paper-notes/blob/master/img/15.3.png)
+
+### References
+
+[1] Shifeng Zhang, Xiangyu Zhu, Zhen Lei, Hailin Shi, Xiaobo Wang, and Stan Z Li. S3fd: Single shot scale-invariant face detector. In Proceedings of the IEEE International Conference on Computer Vision, pages 192–201, 2017.
+
+[2] Jiankang Deng, Jia Guo, Yuxiang Zhou, Jinke Yu, Irene Kotsia, and Stefanos Zafeiriou. Retinaface: Single-stage dense face localisation in the wild. arXiv preprint arXiv:1905.00641, 2019.
+
+[3] Kaipeng Zhang, Zhanpeng Zhang, Zhifeng Li, and Yu Qiao. Joint face detection and alignment using multitask cascaded convolutional networks. IEEE Signal Processing Letters, 23(10):1499–1503, 2016.
+
+[4] Adrian Bulat and Georgios Tzimiropoulos. How far are we from solving the 2d & 3d face alignment problem?(and a dataset of 230,000 3d facial landmarks). In Proceedings of the IEEE International Conference on Computer Vision, pages 1021–1030, 2017.
+
+[5] Yao Feng, Fan Wu, Xiaohu Shao, Yanfeng Wang, and Xi Zhou. Joint 3d face reconstruction and dense alignment with position map regression network. In Proceedings of the European Conference on Computer Vision (ECCV), pages 534–551, 2018.
+
+[6] Shinji Umeyama. Least-squares estimation of transformation parameters between two point patterns. IEEE Transactions on Pattern Analysis & Machine Intelligence, pages 376–380, 1991.
+
+[7] Vladimir Iglovikov and Alexey Shvets. Ternausnet: U-net with vgg11 encoder pre-trained on imagenet for image segmentation. arXiv preprint arXiv:1801.05746, 2018.
+
+[8] Zhou Wang, Alan C Bovik, Hamid R Sheikh, and Eero P Simoncelli. Image quality assessment: from error visibility to structural similarity. IEEE transactions on image processing, 13(4):600–612, 2004.
+
+[9] Artur Loza, Lyudmila Mihaylova, Nishan Canagarajah, and David Bull. Structural similarity-based object tracking in video sequences. In 2006 9th International Conference on Information Fusion, pages 1–6. IEEE, 2006.
+
+[10] Erik Reinhard, Michael Adhikhmin, Bruce Gooch, and Peter Shirley. Color transfer between images. IEEE Computer graphics and applications, 21(5):34–41, 2001.
+
+[11] François Pitié, Anil C Kokaram, and Rozenn Dahyot. Automated colour grading using colour distribution transfer. Computer Vision and Image Understanding, 107(1-2):123–137, 2007.
+
+[12] Patrick Pérez, Michel Gangnet, and Andrew Blake. Poisson image editing. In ACM SIGGRAPH 2003 Papers, pages 313–318. 2003.
+
+## 
